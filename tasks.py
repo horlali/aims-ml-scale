@@ -1,5 +1,6 @@
+import random
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +49,19 @@ def load_ratings(
 
 
 # Load and process movies.csv
-def load_movies(filename):
+def load_movies(filename) -> Dict[int, Dict[str, List[str]]]:
+    """
+    Load and process movie information from a CSV file.
+
+    Args:
+        filename (str): The path to the CSV file containing the movie information.
+
+    Returns:
+        Dict[int, Dict[str, List[str]]]:
+            A dictionary where the key is the movie ID and the value is another dictionary with:
+            - "title": The title of the movie.
+            - "genres": A list of genres associated with the movie.
+    """
     movie_info = {}
 
     with open(filename, "r") as file:
@@ -57,6 +70,7 @@ def load_movies(filename):
             movie_id, title, genres = line.strip().split(",", 2)
             movie_id = int(movie_id)
             movie_info[movie_id] = {"title": title, "genres": genres.split("|")}
+
     return movie_info
 
 
@@ -66,7 +80,17 @@ movie_info = load_movies("dataset_small/movies.csv")
 
 
 # Extract all ratings from user_ratings
-def get_all_ratings(user_ratings: Dict[int, List[Tuple[int, float]]]):
+def get_all_ratings(user_ratings: Dict[int, List[Tuple[int, float]]]) -> np.ndarray:
+    """
+    Extract all ratings from the user_ratings dictionary.
+
+    Args:
+        user_ratings (Dict[int, List[Tuple[int, float]]]): A dictionary where the key is the user ID and the value is a list of tuples,
+                                                           each containing a movie ID and the corresponding rating.
+
+    Returns:
+        np.ndarray: An array of all ratings.
+    """
     all_ratings = []
 
     for ratings in user_ratings.values():
@@ -120,9 +144,6 @@ movie_rating_counts = count_movie_ratings(movie_ratings)
 # plot_power_law_distribution(movie_rating_counts)
 
 
-import random
-
-
 # Function to split data into train and test sets
 def train_test_split(user_ratings, test_ratio=0.2):
     train_data = defaultdict(list)
@@ -140,7 +161,22 @@ def train_test_split(user_ratings, test_ratio=0.2):
 
 
 # RMSE Calculation
-def calculate_rmse(data, model_predict):
+def calculate_rmse(
+    data: Dict[int, List[Tuple[int, float]]],
+    model_predict: Callable[[int, int], float],
+) -> float:
+    """
+    Calculate the Root Mean Square Error (RMSE) for the given data and prediction model.
+
+    Args:
+        data (Dict[int, List[Tuple[int, float]]]): A dictionary where the key is the user ID and the value is a list of tuples,
+                                                   each containing a movie ID and the actual rating.
+        model_predict (Callable[[int, int], float]): A function that takes a user ID and a movie ID and returns the predicted rating.
+
+    Returns:
+        float: The calculated RMSE value.
+    """
+
     squared_errors = []
 
     for user, ratings in data.items():
@@ -168,7 +204,29 @@ print("Train RMSE:", train_rmse)
 print("Test RMSE:", test_rmse)
 
 
-def als(user_ratings, n_users, n_movies, n_factors=10, n_iterations=10, lambda_reg=0.1):
+def als(
+    user_ratings: Dict[int, List[Tuple[int, float]]],
+    n_users: int,
+    n_movies: int,
+    n_factors: int = 10,
+    n_iterations: int = 10,
+    lambda_reg: float = 0.1,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Perform Alternating Least Squares (ALS) to factorize the user-item rating matrix.
+
+    Args:
+        user_ratings (Dict[int, List[Tuple[int, float]]]): A dictionary where the key is the user ID and the value is a list of tuples,
+                                                           each containing a movie ID and the corresponding rating.
+        n_users (int): The number of users.
+        n_movies (int): The number of movies.
+        n_factors (int, optional): The number of latent factors. Defaults to 10.
+        n_iterations (int, optional): The number of iterations to run the ALS algorithm. Defaults to 10.
+        lambda_reg (float, optional): The regularization parameter. Defaults to 0.1.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: A tuple containing the user feature matrix (U) and the movie feature matrix (V).
+    """
     # Initialize user and movie feature matrices with random values
     np.random.seed(0)
     U = np.random.normal(scale=1.0 / n_factors, size=(n_users, n_factors))
