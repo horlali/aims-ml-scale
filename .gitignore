@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+zip
+dataset_large/
+docs.pdf
+dummy.txt
